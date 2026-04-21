@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FLAME TURBO UNLOCKER</title>
+    <style>
+        body { background-color: #0b0b0b; color: #fff; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: #151515; padding: 35px; border-radius: 20px; box-shadow: 0 0 20px rgba(255, 60, 0, 0.4); width: 90%; max-width: 360px; text-align: center; border: 1px solid #222; }
+        h1 { color: #ff3c00; font-size: 26px; margin-bottom: 5px; text-transform: uppercase; font-weight: 800; }
+        .sub { font-size: 11px; color: #777; margin-bottom: 25px; letter-spacing: 1px; }
+        input, select { width: 100%; padding: 14px; margin: 10px 0; border-radius: 10px; border: 1px solid #333; background: #1a1a1a; color: white; box-sizing: border-box; font-size: 14px; outline: none; }
+        input:focus { border-color: #ff3c00; }
+        button { width: 100%; padding: 16px; background: #ff3c00; border: none; color: white; font-weight: bold; border-radius: 10px; cursor: pointer; transition: 0.3s; margin-top: 15px; font-size: 16px; }
+        button:hover { background: #ff5e00; transform: scale(1.02); }
+        button:disabled { background: #444; cursor: not-allowed; }
+        #status { margin-top: 20px; font-weight: 600; font-size: 14px; min-height: 20px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>FLAME TURBO</h1>
+        <div class="sub">KING RANK • ALL CARS • CASH & COIN</div>
+        
+        <select id="game">
+            <option value="CPM1">CAR PARKING 1 (CLASSIC)</option>
+            <option value="CPM2">CAR PARKING 2 (NEW)</option>
+        </select>
+        
+        <input type="email" id="email" placeholder="Game Email">
+        <input type="password" id="password" placeholder="Password">
+        
+        <button id="btn" onclick="executeUnlock()">ACTIVATE UNLOCK</button>
+        
+        <div id="status"></div>
+    </div>
+
+    <script>
+        const API_KEYS = {
+            "CPM1": "AIzaSyAe_aOVT1gSfmHKBrorFvX4fRwN5nODXVA", 
+            "CPM2": "AIzaSyCQDz9rgjgmvmFkvVfmvr2-7fT4tfrzRRQ"
+        };
+
+        const URLS = {
+            "CPM1": "https://us-central1-cp-multiplayer.cloudfunctions.net/SetUserRating4",
+            "CPM2": "https://us-central1-cpm-2-7cea1.cloudfunctions.net/SetUserRating17_AppI"
+        };
+
+        async function executeUnlock() {
+            const btn = document.getElementById('btn');
+            const status = document.getElementById('status');
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const game = document.getElementById('game').value;
+
+            if(!email || !password) {
+                status.style.color = "#ff4444";
+                status.innerText = "❌ Please enter details!";
+                return;
+            }
+
+            btn.disabled = true;
+            status.style.color = "#ffae00";
+            status.innerText = "⏳ Connecting to Server...";
+
+            try {
+                // 1. Google Login
+                const authRes = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${API_KEYS[game]}`, {
+                    method: 'POST',
+                    body: JSON.stringify({ email, password, returnSecureToken: true }),
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const authData = await authRes.json();
+
+                if (!authData.idToken) {
+                    status.style.color = "#ff4444";
+                    status.innerText = "❌ Invalid Login Credentials!";
+                    btn.disabled = false;
+                    return;
+                }
+
+                // 2. Inject Data
+                status.innerText = "🚀 Injecting King Rank & Cars...";
+                const ratingData = {
+                    'money': 50000000, 'coin': 50000, 'race_win': 5000, 'time': 10000000000,
+                    'cars': 100000, 'drift': 100000, 'levels': 100000, 'fuel': 100000
+                };
+                
+                const payload = {
+                    data: JSON.stringify({
+                        RatingData: ratingData,
+                        LocalData: {
+                            money: 50000000,
+                            coin: 50000,
+                            owned_cars: Array.from({length: 185}, (_, i) => i + 1),
+                            unlock_all_cars: true
+                        }
+                    })
+                };
+
+                const injectRes = await fetch(URLS[game], {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authData.idToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (injectRes.ok) {
+                    status.style.color = "#00ff88";
+                    status.innerText = "👑 SUCCESS! RESTART YOUR GAME.";
+                } else {
+                    status.style.color = "#ff4444";
+                    status.innerText = "❌ Injection Failed! Try again.";
+                }
+
+            } catch (error) {
+                status.style.color = "#ff4444";
+                status.innerText = "⚠️ Network Error!";
+            }
+            btn.disabled = false;
+        }
+    </script>
+</body>
+</html>

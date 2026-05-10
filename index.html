@@ -1,149 +1,166 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FLAME TURBO | UNLOCKER</title>
+    <title>CPM Turbo Master - Random Mode</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-        body {
-            background-color: #050505;
-            color: #ffffff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-        .container {
-            background: #111;
-            padding: 30px;
-            border-radius: 20px;
-            box-shadow: 0 0 20px #ff3c00;
-            width: 90%;
-            max-width: 340px;
-            text-align: center;
-            border: 1px solid #222;
-        }
-        h2 { color: #ff3c00; margin-bottom: 5px; text-transform: uppercase; }
-        .desc { font-size: 11px; color: #666; margin-bottom: 20px; font-weight: bold; }
-        input, select {
-            width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            border-radius: 8px;
-            border: 1px solid #333;
-            background: #1a1a1a;
-            color: white;
-            box-sizing: border-box;
-            outline: none;
-        }
-        button {
-            width: 100%;
-            padding: 15px;
-            background: linear-gradient(45deg, #ff3c00, #ff7b00);
-            border: none;
-            color: white;
-            font-weight: bold;
-            border-radius: 8px;
-            cursor: pointer;
-            margin-top: 10px;
-            transition: 0.3s;
-        }
-        button:hover { transform: scale(1.02); }
-        #status { margin-top: 15px; font-weight: bold; font-size: 14px; }
+        body { background: #0b0b0b; color: #fff; font-family: sans-serif; text-align: center; padding: 15px; }
+        .box { max-width: 550px; margin: auto; background: #151515; padding: 20px; border-radius: 12px; border: 1px solid #00ffcc; box-shadow: 0 0 15px rgba(0,255,204,0.2); }
+        h2 { color: #00ffcc; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px; }
+        textarea { width: 100%; height: 150px; background: #202020; color: #00ff00; border: 1px solid #333; border-radius: 5px; padding: 10px; box-sizing: border-box; margin-bottom: 10px; font-family: monospace; }
+        input, select { width: 100%; padding: 12px; margin: 5px 0; background: #202020; border: 1px solid #333; color: white; border-radius: 5px; box-sizing: border-box; outline: none; }
+        input:focus { border-color: #00ffcc; }
+        .mode-selector { background: #252525; padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px dashed #444; }
+        button { width: 100%; padding: 15px; background: #00ffcc; color: #000; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 16px; margin-top: 10px; transition: 0.3s; }
+        button:hover { background: #00ccaa; }
+        .res-area { margin-top: 20px; text-align: left; background: #000; padding: 10px; border-radius: 5px; border: 1px solid #222; }
+        #status { height: 130px; overflow-y: auto; font-family: monospace; font-size: 11px; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 5px; }
+        #successList { height: 150px; width: 100%; background: #111; color: #00ffcc; border: 1px solid #00ffcc; border-radius: 5px; padding: 8px; font-size: 12px; }
+        .suc { color: #00ff00; }
+        .err { color: #ff3333; }
+        .copy-btn { background: #00ffcc; color: #000; padding: 8px 15px; font-size: 13px; font-weight: bold; margin-top: 10px; cursor: pointer; border-radius: 5px; display: inline-block; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h2>FLAME TURBO</h2>
-        <div class="desc">LOGIN • KING RANK • ALL CARS • CASH</div>
-        
-        <select id="game">
-            <option value="CPM1">CPM 1 (Classic)</option>
-            <option value="CPM2">CPM 2 (New)</option>
+<div class="box">
+    <h2>⚡ CPM TURBO MASTER</h2>
+    
+    <div class="mode-selector">
+        <label style="font-size: 11px; color: #aaa;">PROCESS MODE:</label>
+        <select id="workMode" onchange="toggleInputs()">
+            <option value="pass">Only Password Change</option>
+            <option value="email">Only Email Change (Random)</option>
+            <option value="both">Both (Email & Pass Change)</option>
         </select>
-        
-        <input type="email" id="email" placeholder="Email">
-        <input type="password" id="password" placeholder="Password">
-        
-        <button id="btn" onclick="startUnlock()">ACTIVATE NOW</button>
-        
-        <div id="status"></div>
     </div>
 
-    <script>
-        const API_KEYS = {
-            "CPM1": "AIzaSyAe_aOVT1gSfmHKBrorFvX4fRwN5nODXVA",
-            "CPM2": "AIzaSyCQDz9rgjgmvmFkvVfmvr2-7fT4tfrzRRQ"
-        };
+    <textarea id="list" placeholder="Email:OldPass (Paste list here)"></textarea>
+    
+    <div id="emailFields" style="display:none;">
+        <input type="text" id="baseEmail" placeholder="New Email Base (e.g. flame)">
+        <input type="number" id="digitCount" placeholder="How many random digits? (e.g. 4)" value="4">
+    </div>
+    
+    <input type="text" id="newpass" placeholder="Enter New Password to Set">
+    
+    <select id="ver">
+        <option value="AIzaSyCQDz9rgjgmvmFkvVfmvr2-7fT4tfrzRRQ">CPM 2 (Fastest)</option>
+        <option value="AIzaSyAe_aOVT1gSfmHKBrorFvX4fRwN5nODXVA">CPM 1</option>
+    </select>
 
-        const URLS = {
-            "CPM1": "https://us-central1-cp-multiplayer.cloudfunctions.net/SetUserRating4",
-            "CPM2": "https://us-central1-cpm-2-7cea1.cloudfunctions.net/SetUserRating17_AppI"
-        };
+    <button onclick="startTurbo()">🚀 START RANDOM TURBO</button>
 
-        async function startUnlock() {
-            const btn = document.getElementById('btn');
-            const status = document.getElementById('status');
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const game = document.getElementById('game').value;
+    <div class="res-area">
+        <div id="status">Logs will appear here...</div>
+        <p style="font-size: 12px; color: #00ffcc; margin: 5px 0;">✅ SUCCESS LIST:</p>
+        <textarea id="successList" readonly placeholder="Result will appear here..."></textarea>
+        <center><div class="copy-btn" onclick="copyResult()">📋 COPY SUCCESS LIST</div></center>
+    </div>
+</div>
 
-            if(!email || !password) {
-                status.style.color = "red";
-                status.innerText = "❌ Fill all fields!";
-                return;
-            }
+<script>
+    function toggleInputs() {
+        let mode = document.getElementById('workMode').value;
+        let emailFields = document.getElementById('emailFields');
+        let passField = document.getElementById('newpass');
+        
+        emailFields.style.display = (mode === 'email' || mode === 'both') ? 'block' : 'none';
+        passField.placeholder = (mode === 'email') ? "Current Password (Needed for login)" : "Enter New Password to Set";
+    }
 
-            btn.disabled = true;
-            status.style.color = "orange";
-            status.innerText = "⏳ Processing...";
+    async function startTurbo() {
+        let mode = document.getElementById('workMode').value;
+        let listStr = document.getElementById('list').value.trim();
+        let newP = document.getElementById('newpass').value.trim();
+        let baseE = document.getElementById('baseEmail').value.trim();
+        let dCount = parseInt(document.getElementById('digitCount').value);
+        let key = document.getElementById('ver').value;
+        let log = document.getElementById('status');
+        let successBox = document.getElementById('successList');
 
-            try {
-                // 1. Login Logic
-                const authRes = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${API_KEYS[game]}`, {
-                    method: 'POST',
-                    body: JSON.stringify({ email, password, returnSecureToken: true })
-                });
-                const authData = await authRes.json();
+        if (!listStr) { alert("Please paste your account list!"); return; }
+        if (mode !== 'email' && !newP) { alert("Please enter new password!"); return; }
+        if ((mode === 'email' || mode === 'both') && !baseE) { alert("Please enter email base name!"); return; }
 
-                if (authData.idToken) {
-                    // 2. Injection Logic
-                    const payload = {
-                        data: JSON.stringify({
-                            RatingData: { money: 50000000, coin: 50000, race_win: 5000, time: 10000000000 },
-                            LocalData: { money: 50000000, coin: 50000, owned_cars: Array.from({length: 180}, (_, i) => i + 1), unlock_all_cars: true }
-                        })
-                    };
+        let list = listStr.split('\n');
+        log.innerHTML = `🚀 Mode: ${mode.toUpperCase()} | Random Digits: ${dCount}<br>`;
+        successBox.value = ""; 
 
-                    const injectRes = await fetch(URLS[game], {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${authData.idToken}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(payload)
-                    });
+        for (let i = 0; i < list.length; i++) {
+            let line = list[i].trim();
+            if (!line.includes(':')) continue;
+            let [oldE, oldP] = line.split(':');
 
-                    if (injectRes.ok) {
-                        status.style.color = "#00ff00";
-                        status.innerText = "👑 SUCCESS! RESTART GAME.";
-                    } else {
-                        status.style.color = "red";
-                        status.innerText = "❌ Injection Failed.";
-                    }
-                } else {
-                    status.style.color = "red";
-                    status.innerText = "❌ Invalid Login!";
-                }
-            } catch (e) {
-                status.style.color = "red";
-                status.innerText = "❌ Connection Error!";
-            }
-            btn.disabled = false;
+            // --- RANDOM NUMBER GENERATION ---
+            let min = Math.pow(10, dCount - 1);
+            let max = Math.pow(10, dCount) - 1;
+            let randomNum = Math.floor(Math.random() * (max - min + 1)) + min;
+            
+            let targetEmail = (mode === 'email' || mode === 'both') ? `${baseE}${randomNum}@gmail.com` : oldE.trim();
+            let targetPass = (mode === 'pass' || mode === 'both') ? newP : oldP.trim();
+
+            await processAcc(oldE.trim(), oldP.trim(), targetEmail, targetPass, mode, key, log, successBox);
+            // Turbo Speed Delay
+            await new Promise(r => setTimeout(r, 100));
         }
-    </script>
+        log.innerHTML += "🏁 --- ALL PROCESS COMPLETED ---<br>";
+    }
+
+    async function processAcc(e, p, targetE, targetP, mode, key, log, successBox) {
+        try {
+            // Step 1: Login to get token
+            let res1 = await fetch(`https://www.googleapis.com/identitytoolkit/v3/relyingparty/verifyPassword?key=${key}`, {
+                method: 'POST',
+                body: JSON.stringify({ email: e, password: p, returnSecureToken: true }),
+                headers: { 'Content-Type': 'application/json' }
+            });
+            let d1 = await res1.json();
+
+            if (d1.idToken) {
+                let updateData = { idToken: d1.idToken, returnSecureToken: true };
+                
+                if (mode === 'pass') {
+                    updateData.password = targetP;
+                } else if (mode === 'email') {
+                    updateData.email = targetE;
+                } else if (mode === 'both') {
+                    updateData.email = targetE;
+                    updateData.password = targetP;
+                }
+
+                // Step 2: Update credentials
+                let res2 = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:update?key=${key}`, {
+                    method: 'POST',
+                    body: JSON.stringify(updateData),
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (res2.ok) {
+                    log.innerHTML += `<span class="suc">✅ OK: ${e} -> ${targetE}</span><br>`;
+                    successBox.value += `${targetE}:${targetP}\n`;
+                } else {
+                    let d2 = await res2.json();
+                    log.innerHTML += `<span class="err">❌ UPDATE FAIL: ${e} (${d2.error.message})</span><br>`;
+                }
+            } else {
+                log.innerHTML += `<span class="err">⚠️ LOGIN ERROR: ${e} (Wrong pass or limited)</span><br>`;
+            }
+        } catch (err) {
+            log.innerHTML += `<span class="err">❗ NETWORK ERROR: ${e}</span><br>`;
+        }
+        log.scrollTop = log.scrollHeight;
+        successBox.scrollTop = successBox.scrollHeight;
+    }
+
+    function copyResult() {
+        let copyText = document.getElementById("successList");
+        if (!copyText.value) { alert("List is empty!"); return; }
+        copyText.select();
+        document.execCommand("copy");
+        alert("Success list copied to clipboard!");
+    }
+</script>
+
 </body>
 </html>
